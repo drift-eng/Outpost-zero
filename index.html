@@ -1,0 +1,838 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Outpost Zero</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Layout: a mission-control console. Animated base scene + six live meters on the left, the day's decision panel on the right; stacks on phones. */
+:root {
+  --space: #14113a; --panel: #1f1b50; --panel2: #2a2566; --line: #3d3784; --ink: #f4f2ff; --muted: #b9b3e6;
+  --sun: #ffc233; --sun-deep: #b97f00; --sun-ink: #2b1b00; --good: #5ee08a; --warn: #ffb347; --bad: #ff6b7a;
+  --c-power: #ffc233; --c-o2: #5cc8ff; --c-water: #4d8dff; --c-food: #5ee08a; --c-shield: #b48cff; --c-crew: #ff7eb6;
+  --font-display: "Fredoka", "Trebuchet MS", system-ui, sans-serif; --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background: var(--space); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.45;
+  background-image: radial-gradient(900px 500px at 85% -10%, #3b2f8f55, transparent 60%), radial-gradient(700px 420px at -10% 110%, #1b6fbf33, transparent 60%);
+  background-attachment: fixed; min-height: 100vh;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 14px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; line-height: 1.12; }
+p { margin: 0; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; border-radius: 10px; }
+.top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-bottom: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: .2px; background: none; border: 0; padding: 0; }
+.brand svg { width: 34px; height: 34px; }
+.top .sp { flex: 1; }
+.pips { display: flex; gap: 6px; align-items: center; }
+.pip { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font: 600 12px var(--font-display); color: var(--muted); }
+.pip.done { background: var(--good); border-color: var(--good); color: #06301a; }
+.pip.now { background: var(--sun); border-color: var(--sun); color: var(--sun-ink); transform: scale(1.12); }
+.iconbtn { background: var(--panel); border: 2px solid var(--line); border-radius: 14px; min-height: 40px; padding: 6px 12px; font-weight: 800; font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
+.iconbtn:hover { border-color: var(--sun); }
+.card { background: var(--panel); border: 2px solid var(--line); border-radius: 22px; padding: 18px; }
+.btn { background: var(--sun); color: var(--sun-ink); border: 0; border-radius: 16px; padding: 13px 22px; font: 600 18px var(--font-display); box-shadow: 0 5px 0 var(--sun-deep); transition: transform .08s, box-shadow .08s; min-height: 48px; }
+.btn:hover { filter: brightness(1.06); }
+.btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--sun-deep); }
+.btn.ghost { background: var(--panel2); color: var(--ink); box-shadow: 0 5px 0 #17133f; border: 2px solid var(--line); }
+.btn.big { font-size: 22px; padding: 15px 30px; }
+.kicker { font: 700 12px var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tag { padding: 3px 10px; border-radius: 999px; font: 800 11px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: #12102e; background: var(--muted); }
+.tag.danger { background: var(--bad); } .tag.trouble { background: var(--warn); } .tag.good { background: var(--good); } .tag.crew { background: var(--c-crew); } .tag.info { background: var(--c-o2); }
+
+/* Title screen */
+.hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 22px; align-items: stretch; }
+.hero h1 { font-size: clamp(40px, 7vw, 68px); font-weight: 700; letter-spacing: -.5px; }
+.hero h1 span { color: var(--sun); }
+.lead { font-size: 19px; color: var(--muted); margin-top: 12px; max-width: 46ch; }
+.hero-art { padding: 0; overflow: hidden; display: flex; align-self: start; }
+.hero-art svg { width: 100%; height: auto; display: block; }
+.picker { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
+.pick { position: relative; }
+.pick input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; cursor: pointer; margin: 0; }
+.pick label { display: block; height: 100%; background: var(--panel2); border: 3px solid var(--line); border-radius: 20px; padding: 14px; }
+.pick input:checked + label { border-color: var(--sun); background: #342d7a; }
+.pick input:focus-visible + label { outline: 3px solid var(--sun); outline-offset: 2px; }
+.pick h3 { font-size: 24px; } .pick p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+.pick .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+.seg { display: inline-flex; background: var(--panel2); border: 2px solid var(--line); border-radius: 16px; padding: 4px; gap: 4px; margin-top: 14px; }
+.seg .pick label { padding: 8px 18px; border-radius: 12px; border-width: 0; background: transparent; font: 600 16px var(--font-display); }
+.seg .pick input:checked + label { background: var(--sun); color: var(--sun-ink); }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.step { background: var(--panel); border: 2px solid var(--line); border-radius: 18px; padding: 14px; }
+.step b { font-family: var(--font-display); font-size: 18px; display: block; margin-bottom: 4px; }
+.step span { color: var(--muted); font-size: 14px; }
+.best { color: var(--muted); font-size: 14px; margin-top: 12px; }
+
+/* Game layout */
+.grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.left, .right { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.scene { padding: 0; overflow: hidden; position: relative; }
+.scene svg { width: 100%; height: auto; display: block; }
+.scene-bar { position: absolute; left: 12px; top: 10px; right: 12px; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; flex-wrap: wrap; }
+.badge { background: #0e0c2ccc; border: 2px solid var(--line); border-radius: 999px; padding: 4px 12px; font: 700 13px var(--font-body); }
+.crew { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+.mate { text-align: center; font-size: 12px; color: var(--muted); }
+.mate svg { width: 54px; height: 54px; display: block; margin: 0 auto 2px; }
+.mate b { display: block; color: var(--ink); font: 600 15px var(--font-display); }
+.meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.meter { background: var(--panel); border: 2px solid var(--line); border-radius: 18px; padding: 10px 12px; min-width: 0; }
+.m-head { display: flex; align-items: center; gap: 8px; }
+.m-head svg { width: 22px; height: 22px; flex: none; }
+.m-name { font: 600 16px var(--font-display); flex: 1; }
+.m-val { font: 700 20px var(--font-display); font-variant-numeric: tabular-nums; }
+.bar { height: 12px; background: #120f33; border-radius: 99px; margin: 8px 0 6px; overflow: hidden; position: relative; }
+.bar i { display: block; height: 100%; border-radius: 99px; transition: width .5s cubic-bezier(.3, .9, .3, 1); }
+.m-foot { display: flex; justify-content: space-between; font: 800 12px var(--font-body); min-height: 18px; }
+.m-state { color: var(--good); } .low .m-state { color: var(--warn); } .crit .m-state { color: var(--bad); }
+.delta.up { color: var(--good); } .delta.down { color: var(--bad); } .delta.flat { color: var(--muted); }
+.crit { border-color: var(--bad); animation: throb 1.4s infinite; }
+
+/* Panel contents */
+.panel h2 { font-size: 28px; margin: 8px 0 6px; }
+.panel .txt { color: #dcd8ff; font-size: 17px; }
+.choices { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.choice { text-align: left; background: var(--panel2); border: 2px solid var(--line); border-radius: 18px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.choice:hover { border-color: var(--sun); transform: translateY(-1px); }
+.ct { font: 600 19px var(--font-display); } .cd { color: var(--muted); font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 800 12px var(--font-body); padding: 3px 9px; border-radius: 999px; background: #120f33; border: 2px solid var(--line); }
+.chip.good { color: var(--good); border-color: #2f7a4d; } .chip.bad { color: #ff8e9a; border-color: #8a3a47; }
+.fact { background: #14123a; border: 2px dashed var(--c-o2); border-radius: 18px; padding: 12px 14px; margin-top: 14px; }
+.fact b { font: 700 12px var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--c-o2); display: block; margin-bottom: 4px; }
+.quiz { margin-top: 14px; }
+.quiz h3 { font-size: 18px; margin-bottom: 8px; }
+.qopts { display: flex; flex-direction: column; gap: 8px; }
+.qopt { text-align: left; background: var(--panel2); border: 2px solid var(--line); border-radius: 14px; padding: 9px 12px; font-weight: 700; }
+.qopt.right { border-color: var(--good); background: #1d4a35; } .qopt.wrong { border-color: var(--bad); background: #4d2030; }
+.qfeed { margin-top: 8px; font-weight: 800; min-height: 22px; }
+.sect { margin-top: 18px; } .sect h3 { font-size: 20px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.sect h3 small { font: 700 13px var(--font-body); color: var(--muted); }
+.ctrl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid #2f2a6e; }
+.ctrl:last-child { border-bottom: 0; }
+.ctrl .nm { font: 600 17px var(--font-display); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ctrl .ds { color: var(--muted); font-size: 13px; }
+.eva { font: 800 10px var(--font-body); letter-spacing: .08em; background: var(--c-shield); color: #1a1040; padding: 2px 7px; border-radius: 999px; }
+.stepper { display: flex; align-items: center; gap: 8px; }
+.stepper button { width: 40px; height: 40px; border-radius: 12px; border: 2px solid var(--line); background: var(--panel2); font: 700 22px var(--font-display); line-height: 1; padding: 0; }
+.stepper button:hover:not(:disabled) { border-color: var(--sun); }
+.stepper button:disabled { opacity: .35; cursor: not-allowed; }
+.blocks { display: flex; gap: 4px; min-width: 52px; justify-content: center; }
+.blk { width: 20px; height: 26px; border-radius: 6px; border: 2px solid var(--line); }
+.blk.on { background: var(--c-power); border-color: var(--c-power); }
+.count { font: 700 22px var(--font-display); min-width: 26px; text-align: center; font-variant-numeric: tabular-nums; }
+.budget { background: #14123a; border-radius: 14px; padding: 8px 12px; font-weight: 800; font-size: 14px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; margin-top: 8px; }
+.budget .over { color: var(--bad); }
+.alert { margin-top: 12px; padding: 10px 12px; border-radius: 14px; font-weight: 700; font-size: 14px; background: #4d2030; border: 2px solid var(--bad); }
+.tip { margin-top: 12px; padding: 10px 12px; border-radius: 14px; font-weight: 700; font-size: 14px; background: #123a4d; border: 2px solid var(--c-o2); }
+.cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; align-items: center; }
+.rep { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 12px; }
+.rep div { background: #14123a; border-radius: 14px; padding: 8px 10px; font-weight: 800; display: flex; justify-content: space-between; gap: 8px; }
+.notes { margin: 12px 0 0; padding-left: 18px; color: #dcd8ff; }
+
+/* End + about */
+.end-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.stars { display: flex; gap: 8px; margin: 10px 0; } .stars svg { width: 48px; height: 48px; }
+.score { font: 700 40px var(--font-display); color: var(--sun); }
+.lessons { margin: 10px 0 0; padding-left: 20px; } .lessons li { margin-bottom: 8px; }
+.cert { background: #fff8e1; color: #3a2a00; border-radius: 18px; padding: 22px; text-align: center; border: 6px double #c9971c; }
+.cert h3 { color: #7a4b00; font-size: 26px; } .cert .nm { font: 700 34px var(--font-display); min-height: 44px; margin: 8px 0; color: #12306b; overflow-wrap: anywhere; }
+.cert p { font-size: 14px; color: #5a4300; }
+.nameinput { width: 100%; padding: 12px 14px; border-radius: 14px; border: 2px solid var(--line); background: var(--panel2); color: var(--ink); font: 600 18px var(--font-body); margin-top: 8px; }
+.photo { margin-top: 12px; border-radius: 16px; overflow: hidden; } .photo img { width: 100%; display: block; } .photo small { display: block; padding: 6px 10px; background: #14123a; color: var(--muted); }
+.mini { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-top: 10px; } .mini div { background: #14123a; border-radius: 12px; padding: 6px 10px; font-weight: 800; font-size: 14px; display: flex; justify-content: space-between; gap: 6px; }
+.about h2 { font-size: 30px; } .about h3 { margin-top: 18px; font-size: 20px; } .about p, .about li { color: #dcd8ff; } .about ul { padding-left: 20px; } .about a { color: var(--c-o2); font-weight: 800; }
+
+/* Scene styling */
+.sky1 { stop-color: var(--sky1); } .sky2 { stop-color: var(--sky2); }
+#scene[data-site="moon"] { --sky1: #0a0924; --sky2: #29276a; --ground: #9f9cb8; --ground2: #7d7a99; --far: #4c4a78; }
+#scene[data-site="mars"] { --sky1: #3b1d45; --sky2: #d8794a; --ground: #c0583a; --ground2: #964228; --far: #8a3f4d; }
+#scene.night[data-site="moon"] { --sky1: #04030f; --sky2: #12103a; --ground: #5d5b78; --ground2: #48466a; }
+#scene.night .sunobj { opacity: 0; } .sunobj { transition: opacity 1s; }
+.star { fill: #fff; animation: twinkle 3s infinite; } #scene[data-site="mars"] .star { opacity: .4; }
+.gnd { fill: var(--ground); } .gnd2 { fill: var(--ground2); } .far { fill: var(--far); }
+.hab-body, .hab-dome { fill: #e9e8f7; stroke: #9d9bc4; stroke-width: 3; } .hab-dome { fill: #f6f5ff; }
+.win { fill: #3a3866; transition: fill .4s; } .lit .win { fill: #ffe9a3; filter: drop-shadow(0 0 4px #ffd45e); }
+.hab-door { fill: #6e6aa8; } .ant { stroke: #cfcdf0; stroke-width: 3; } .dish { fill: #cfcdf0; transform-origin: 366px 150px; animation: sweep 6s ease-in-out infinite alternate; }
+.panel-s polygon { fill: #2b64c9; stroke: #9cc0ff; stroke-width: 2; } .panel-s line { stroke: #9d9bc4; stroke-width: 3; } .panel-s { transition: opacity .5s; } .panel-s.off { opacity: 0; }
+.wall { fill: #8b7a6a; stroke: #6e5f52; stroke-width: 2; transition: d .6s; } #scene[data-site="moon"] .wall { fill: #b9b6d1; stroke: #8d8aa9; }
+.ghd { fill: #bff3d3aa; stroke: #7bd9a5; stroke-width: 3; } .plant { fill: #5ee08a; transition: opacity .4s; } .plant.off { opacity: 0; }
+.rover { animation: drive 26s linear infinite alternate; } .rover rect, .rover circle { stroke: #3a3866; stroke-width: 2; }
+.dust-ov { fill: #d98a4e; opacity: 0; transition: opacity 1.2s; pointer-events: none; } #scene.dust .dust-ov { opacity: .5; animation: dusty 4s ease-in-out infinite alternate; }
+.flare-ov { fill: #ffe27a; opacity: 0; pointer-events: none; } #scene.flare .flare-ov { animation: flash 3.2s ease-out 1; }
+.cold-ov { fill: #7fb8ff; opacity: 0; transition: opacity 1s; pointer-events: none; } #scene.night .cold-ov { opacity: .08; }
+@keyframes twinkle { 50% { opacity: .25; } } @keyframes sweep { to { transform: rotate(-24deg); } } @keyframes drive { from { transform: translateX(0); } to { transform: translateX(340px); } }
+@keyframes dusty { to { opacity: .62; } } @keyframes flash { 0%, 30%, 60% { opacity: .75; } 15%, 45%, 100% { opacity: 0; } } @keyframes throb { 50% { box-shadow: 0 0 0 4px #ff6b7a44; } }
+
+@media (max-width: 900px) {
+  .hero, .grid, .end-grid { grid-template-columns: minmax(0, 1fr); }
+  .steps { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 480px) {
+  .picker { grid-template-columns: minmax(0, 1fr); } .pip { width: 22px; height: 22px; font-size: 11px; } .panel h2 { font-size: 24px; }
+  .mate svg { width: 44px; height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z" fill="currentColor"/></symbol>
+    <symbol id="i-o2" viewBox="0 0 24 24"><circle cx="9" cy="14" r="5.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="17" cy="7.5" r="3.4" fill="none" stroke="currentColor" stroke-width="2.4"/></symbol>
+    <symbol id="i-water" viewBox="0 0 24 24"><path d="M12 2C12 2 5 10 5 15a7 7 0 0 0 14 0C19 10 12 2 12 2z" fill="currentColor"/></symbol>
+    <symbol id="i-food" viewBox="0 0 24 24"><path d="M4 20C4 10 9 4 21 4c0 11-6 16-14 16" fill="currentColor"/><path d="M4 20l8-8" stroke="#14113a" stroke-width="2" fill="none"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" fill="currentColor"/></symbol>
+    <symbol id="i-crew" viewBox="0 0 24 24"><path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z" fill="currentColor"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l3 6.6 7.2.8-5.4 4.8 1.6 7.1L12 17.6 5.6 21.3l1.6-7.1L1.8 9.4 9 8.6z"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <button class="brand" id="homeBtn" aria-label="Back to the start screen">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="#2a2566" stroke="#ffc233" stroke-width="3"/><path d="M8 27 Q20 16 32 27" fill="none" stroke="#ffc233" stroke-width="3" stroke-linecap="round"/><circle cx="26" cy="13" r="4" fill="#5cc8ff"/></svg>
+      Outpost Zero
+    </button>
+    <div class="pips" id="pips" aria-label="Mission day" hidden></div>
+    <div class="sp"></div>
+    <button class="iconbtn" id="soundBtn" aria-pressed="true">Sound on</button>
+    <button class="iconbtn" id="aboutBtn">NASA facts &amp; credits</button>
+  </header>
+
+  <main>
+    <section id="title">
+      <div class="hero">
+        <div>
+          <div class="kicker"><span class="tag info">NASA Space Apps Challenge 2026</span> Junior Astronaut Mission Trainer</div>
+          <h1 style="margin-top:12px">Run a base on the <span>Moon</span> or <span>Mars</span>.</h1>
+          <p class="lead">You are the mission commander. Keep four astronauts safe for 8 days by balancing power, air, water, food, radiation shielding and crew spirit. Every choice has a trade-off, just like in real missions.</p>
+          <div class="picker" role="radiogroup" aria-label="Choose your world">
+            <div class="pick"><input type="radio" name="site" id="s-moon" value="moon" checked><label for="s-moon"><h3><span class="dot" style="background:#b9b6d1"></span>The Moon</h3><p>Shackleton Crater rim. A 3-day night, freezing cold, strong radiation.</p></label></div>
+            <div class="pick"><input type="radio" name="site" id="s-mars" value="mars"><label for="s-mars"><h3><span class="dot" style="background:#d8794a"></span>Mars</h3><p>Jezero Crater. Dust storms, thin air and slow radio calls to Earth.</p></label></div>
+          </div>
+          <div class="row" style="margin-top:6px">
+            <div class="seg" role="radiogroup" aria-label="Choose difficulty">
+              <div class="pick"><input type="radio" name="diff" id="d-cadet" value="cadet" checked><label for="d-cadet">Cadet</label></div>
+              <div class="pick"><input type="radio" name="diff" id="d-commander" value="commander"><label for="d-commander">Commander</label></div>
+            </div>
+            <span class="best" id="best" style="margin-top:14px"></span>
+          </div>
+          <div class="row" style="margin-top:20px"><button class="btn big" id="startBtn">Launch mission</button></div>
+        </div>
+        <div class="card hero-art" aria-hidden="true">
+          <svg viewBox="0 0 520 440" preserveAspectRatio="xMidYMid meet">
+            <defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b0a2a"/><stop offset="1" stop-color="#3a2d8c"/></linearGradient></defs>
+            <rect width="520" height="440" fill="url(#hg)"/>
+            <g fill="#fff" opacity=".8"><circle cx="60" cy="50" r="2"/><circle cx="140" cy="110" r="1.5"/><circle cx="260" cy="40" r="2"/><circle cx="380" cy="90" r="1.5"/><circle cx="470" cy="40" r="2"/><circle cx="430" cy="160" r="1.5"/><circle cx="90" cy="180" r="1.5"/><circle cx="320" cy="150" r="1.5"/></g>
+            <circle cx="400" cy="120" r="46" fill="#3d8bff"/><path d="M370 110c14-14 34-10 44 2s-4 26-20 22-34 2-24-24z" fill="#5ee08a" opacity=".85"/><path d="M420 150c10-6 20 0 18 10s-14 10-18 0z" fill="#5ee08a" opacity=".85"/>
+            <path d="M0 330 Q130 300 260 326 T520 312 V440 H0Z" fill="#9f9cb8"/><path d="M0 380 Q150 356 300 380 T520 370 V440 H0Z" fill="#7d7a99"/>
+            <g transform="translate(170,215)"><rect x="40" y="70" width="64" height="26" rx="12" fill="#f6f5ff" stroke="#9d9bc4" stroke-width="3"/><path d="M100 96 A58 54 0 0 1 216 96Z" fill="#fff" stroke="#9d9bc4" stroke-width="3"/><circle cx="130" cy="78" r="7" fill="#ffe9a3"/><circle cx="160" cy="70" r="7" fill="#ffe9a3"/><circle cx="190" cy="78" r="7" fill="#ffe9a3"/><line x1="158" y1="42" x2="158" y2="18" stroke="#cfcdf0" stroke-width="3"/><ellipse cx="158" cy="18" rx="14" ry="5" fill="#cfcdf0"/></g>
+            <g transform="translate(70,300)"><polygon points="0,30 30,30 36,6 6,6" fill="#2b64c9" stroke="#9cc0ff" stroke-width="2"/><polygon points="40,30 70,30 76,6 46,6" fill="#2b64c9" stroke="#9cc0ff" stroke-width="2"/></g>
+            <g transform="translate(70,150)"><circle cx="40" cy="40" r="34" fill="#f6f5ff" stroke="#ffc233" stroke-width="5"/><rect x="18" y="26" width="44" height="26" rx="13" fill="#1d1a45"/><circle cx="32" cy="40" r="3.5" fill="#fff"/><circle cx="48" cy="40" r="3.5" fill="#fff"/></g>
+          </svg>
+        </div>
+      </div>
+      <div class="steps">
+        <div class="step"><b>1. Read the briefing</b><span>Each morning something happens: a solar flare, a leak, a dust storm. Pick how to respond.</span></div>
+        <div class="step"><b>2. Plan the day</b><span>Spend power blocks on machines and 4 crew shifts on jobs. The little arrows show what tomorrow looks like.</span></div>
+        <div class="step"><b>3. Survive 8 days</b><span>Keep every system above zero, earn science points and answer Mission Control questions for bonus points.</span></div>
+      </div>
+    </section>
+
+    <section id="game" hidden>
+      <div class="grid">
+        <div class="left">
+          <div class="card scene" id="scene" data-site="moon">
+            <div class="scene-bar"><span class="badge" id="siteBadge"></span><span class="badge" id="sunBadge"></span></div>
+            <svg viewBox="0 0 720 300" role="img" aria-label="Animated picture of your outpost">
+              <defs><linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1"><stop class="sky1" offset="0"/><stop class="sky2" offset="1"/></linearGradient><radialGradient id="sunG"><stop offset="0" stop-color="#fff6c8"/><stop offset="1" stop-color="#ffd45e" stop-opacity="0"/></radialGradient></defs>
+              <rect width="720" height="300" fill="url(#skyG)"/>
+              <g id="stars"></g>
+              <g class="sunobj"><circle cx="110" cy="62" r="46" fill="url(#sunG)"/><circle id="sunDisc" cx="110" cy="62" r="20" fill="#ffe27a"/></g>
+              <g id="earth"><circle id="earthDisc" cx="620" cy="58" r="15" fill="#3d8bff"/><path id="earthLand" d="M612 54c4-5 10-3 12 1s-2 8-6 6-8 0-6-7z" fill="#5ee08a"/></g>
+              <path class="far" d="M0 222 L70 186 L130 214 L210 176 L290 216 L380 190 L470 218 L560 180 L640 212 L720 190 V240 H0Z"/>
+              <path class="gnd" d="M0 232 Q180 214 360 230 T720 224 V300 H0Z"/>
+              <path class="gnd2" d="M0 262 Q200 246 380 262 T720 256 V300 H0Z"/>
+              <ellipse class="gnd2" cx="110" cy="276" rx="34" ry="7"/><ellipse class="gnd2" cx="520" cy="284" rx="46" ry="8"/><ellipse class="gnd2" cx="330" cy="272" rx="22" ry="5"/>
+              <g id="panels"></g>
+              <g id="hab"><rect class="hab-body" x="236" y="208" width="70" height="30" rx="12"/><path class="hab-dome" d="M300 238 A66 62 0 0 1 432 238 Z"/>
+                <circle class="win" cx="332" cy="214" r="7"/><circle class="win" cx="364" cy="204" r="7"/><circle class="win" cx="396" cy="214" r="7"/><circle class="win" cx="258" cy="222" r="5"/><circle class="win" cx="282" cy="222" r="5"/>
+                <rect class="hab-door" x="352" y="222" width="24" height="16" rx="6"/><line class="ant" x1="366" y1="176" x2="366" y2="150"/><ellipse class="dish" cx="366" cy="150" rx="15" ry="5"/></g>
+              <path id="wallP" class="wall" d="M450 238 Q 520 220 600 238 Z"/>
+              <g id="gh"><path class="ghd" d="M628 238 A36 32 0 0 1 700 238Z"/><g id="plants"></g></g>
+              <g class="rover" transform="translate(40,0)"><rect x="0" y="254" width="34" height="12" rx="4" fill="#e9e8f7"/><rect x="18" y="246" width="14" height="10" rx="3" fill="#ffc233"/><circle cx="7" cy="268" r="5" fill="#2a2566"/><circle cx="27" cy="268" r="5" fill="#2a2566"/><line x1="8" y1="254" x2="8" y2="240" stroke="#cfcdf0" stroke-width="2"/></g>
+              <rect class="cold-ov" width="720" height="300"/><rect class="dust-ov" width="720" height="300"/><rect class="flare-ov" width="720" height="300"/>
+            </svg>
+          </div>
+          <div class="card crew" id="crew" aria-label="Your crew"></div>
+          <div class="meters" id="meters"></div>
+        </div>
+        <div class="right"><div class="card panel" id="panel" aria-live="polite"></div></div>
+      </div>
+    </section>
+
+    <section id="end" hidden></section>
+
+    <section id="about" class="card about" hidden>
+      <h2>NASA facts &amp; credits</h2>
+      <p>Outpost Zero turns real space-habitat trade-offs into a game. Every event shows a short fact from real NASA missions and research, and each game day stands for several real days.</p>
+      <h3>Real NASA ideas in the game</h3>
+      <ul>
+        <li><b>Artemis and the Moon's south pole:</b> water ice in dark craters (LCROSS found water there in 2009), and the long lunar night of about 14 Earth days.</li>
+        <li><b>International Space Station life support:</b> water recycling around 98 percent, and astronauts repairing their own equipment.</li>
+        <li><b>Orion storm shelters and radiation:</b> why water and soil make good shields against solar particle events.</li>
+        <li><b>Mars missions:</b> the 2018 dust storm and Opportunity, perchlorates found by Phoenix, MOXIE making oxygen on Perseverance, and radio delays of about 4 to 24 minutes.</li>
+        <li><b>Crew health:</b> exercise on the ISS and NASA's CHAPEA practice Mars habitat.</li>
+        <li><b>Apollo:</b> about 382 kg of Moon rocks and sticky, sharp moon dust.</li>
+      </ul>
+      <h3>Where to learn more</h3>
+      <ul>
+        <li><a href="https://www.spaceappschallenge.org/" target="_blank" rel="noopener">NASA Space Apps Challenge</a></li>
+        <li><a href="https://science.nasa.gov/moon/" target="_blank" rel="noopener">NASA Science: Moon</a> and <a href="https://science.nasa.gov/mars/" target="_blank" rel="noopener">Mars</a></li>
+        <li><a href="https://images.nasa.gov/" target="_blank" rel="noopener">NASA Image and Video Library</a> (used for the photo on the mission report when you play online)</li>
+        <li><a href="https://www.nasa.gov/" target="_blank" rel="noopener">NASA.gov</a></li>
+      </ul>
+      <h3>About this project</h3>
+      <p>Made by a student team for the NASA Space Apps Challenge 2026 challenge "Build a Junior Astronaut Mission Trainer", with help from an AI assistant. This is not an official NASA product and NASA has not endorsed it. Numbers are simplified for learning.</p>
+      <div class="cta"><button class="btn" id="aboutBack">Back</button></div>
+    </section>
+  </main>
+</div>
+
+<script>
+/* Outpost Zero simulation engine (no DOM). Shared by the game UI and the balance tester. */
+(function (root) {
+'use strict';
+var METERS = ['power', 'o2', 'water', 'food', 'shield', 'crew'];
+var TASKS = ['ice', 'garden', 'wall', 'solar', 'repair', 'science', 'rest', 'comms'];
+var SYSTEMS = ['ls', 'wr', 'gh', 'ht'];
+var MAX_DAY = 8, BASE_SHIFTS = 4, BLOCK_COST = 5, STANDBY = 3, MAX_BLOCKS = 2;
+
+var TUNE = { o2: 20, water: 14, food: 14, crew: 5, ls: 9, wr: 6, gh: 6, ice: 12, garden: 9 };
+function clamp(v, a, b) { a = a === undefined ? 0 : a; b = b === undefined ? 100 : b; return Math.max(a, Math.min(b, v)); }
+function rnd(s) { s.rs = (s.rs + 0x6D2B79F5) | 0; var t = Math.imul(s.rs ^ (s.rs >>> 15), 1 | s.rs); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+var SITES = {
+  moon: { id: 'moon', name: 'The Moon', place: 'Shackleton Crater rim, lunar south pole', gen: 32, radFactor: 1 },
+  mars: { id: 'mars', name: 'Mars', place: 'Jezero Crater, an ancient lake bed', gen: 26, radFactor: 0.7 }
+};
+var DIFFS = {
+  cadet: { name: 'Cadet', drain: 0.95, start: { power: 75, o2: 75, water: 75, food: 75, shield: 40, crew: 80 } },
+  commander: { name: 'Commander', drain: 1, start: { power: 65, o2: 65, water: 65, food: 65, shield: 30, crew: 70 } }
+};
+
+var C = function (t, d, fx, res) { return { t: t, d: d, fx: fx || {}, res: res }; };
+var EVENTS = {
+  cargo: { sites: ['moon', 'mars'], kind: 'good', title: 'Cargo lander arrives', text: 'A supply lander touched down near the base. You can unload one kind of crate first.',
+    choices: [C('Food crates', 'Fresh meals for the crew.', { food: 22 }, 'The crew cheers. Dinner will be good tonight.'),
+      C('Water tanks', 'Clean water for drinking and plants.', { water: 22 }, 'The tanks are connected and the water gauge jumps up.'),
+      C('Spare batteries', 'Extra stored power.', { power: 25 }, 'The battery bank is topped up.')],
+    fact: 'Cargo ships are how real outposts will get supplies. On the International Space Station, cargo spacecraft bring food, water and science gear. Every kilogram launched is costly, so planners pack carefully.',
+    quiz: { q: 'Why do mission planners pack so carefully?', a: ['Rockets can only carry so much weight', 'Crates are hard to open', 'Space has no boxes'], c: 0 } },
+  flare: { sites: ['moon', 'mars'], kind: 'danger', title: 'Space weather alert', text: 'The Sun let out a solar flare. Fast, invisible particles will reach the base in a few hours.',
+    choices: [C('Shelter in the storm room', 'Lose 2 work shifts. Crew stays very safe.', { shifts: -2, rad: 6 }, 'Everyone waited it out in the shielded room. Nobody got a big dose.'),
+      C('Keep working outside', 'Full work day, but the crew takes the radiation.', { rad: 34 }, 'The crew finished their jobs, but the particles passed right through the thin walls.'),
+      C('Build a water-wall shield', 'Use 12 water and stack it around the crew room.', { water: -12, shield: 12, rad: 14 }, 'Water is great at blocking particles. The wall will help for the rest of the mission too.')],
+    fact: 'Water and other hydrogen-rich materials block space radiation well. NASA’s Orion crews can build a storm shelter from supplies stored in the capsule.',
+    quiz: { q: 'Which of these blocks radiation best?', a: ['A thin sheet of foil', 'A thick wall of water or moon soil', 'An open window'], c: 1 } },
+  equip: { sites: ['moon', 'mars'], kind: 'trouble', title: 'Oxygen maker hiccup', text: 'A filter in the life-support machine is clogged. It is still running, but not well.',
+    choices: [C('Fix it right now', 'Costs 1 work shift. Machine back to normal.', { shifts: -1 }, 'The filter was swapped and the machine hums happily.'),
+      C('Patch it later', 'No shift lost today, but the oxygen maker runs at half power until you do a Repair job.', { dmg: 'ls' }, 'You taped a note to the machine: “fix me”. It limps along.')],
+    fact: 'The space station’s life-support system cleans air and recycles water. Astronauts train to repair their own equipment because help is very far away.',
+    quiz: { q: 'Why do astronauts learn to fix their own equipment?', a: ['It is a fun hobby', 'Help is very far away', 'Robots are not allowed'], c: 1 } },
+  micro: { sites: ['moon', 'mars'], kind: 'trouble', title: 'Tiny space rock', text: 'A micrometeoroid made a pinhole in an outer wall. Air is slowly leaking out.',
+    choices: [C('Patch it with sealant', 'Costs 1 work shift and a little air.', { shifts: -1, o2: -3 }, 'A quick patch and the hiss stops.'),
+      C('Ignore it for now', 'Lose a lot of oxygen.', { o2: -16 }, 'The hiss kept going all day. The oxygen gauge dropped.')],
+    fact: 'Micrometeoroids can travel faster than a bullet. Spacecraft walls are built in layers, called Whipple shields, so a tiny rock breaks apart before it gets inside.',
+    quiz: { q: 'How fast can micrometeoroids move?', a: ['Slower than a bicycle', 'Faster than a bullet', 'About walking speed'], c: 1 } },
+  homesick: { sites: ['moon', 'mars'], kind: 'crew', title: 'The crew feels homesick', text: 'It has been a few days. Everyone misses home and seems a bit quiet.',
+    choices: [C('Video call with families', 'Costs 1 work shift. Big mood boost.', { shifts: -1, crew: 12 }, 'Seeing familiar faces made everyone smile.'),
+      C('Skip it and keep working', 'Mood drops.', { crew: -8 }, 'The crew kept going, but they were tired and sad.'),
+      C('Game night', 'A small mood boost, uses a little food for snacks.', { crew: 8, food: -3 }, 'Snacks, laughs and a very competitive card game.')],
+    fact: 'Astronauts on the space station exercise about two hours a day. NASA also studies crews in practice habitats, like CHAPEA, where four volunteers lived in a Mars-style home for over a year.',
+    quiz: { q: 'Why does NASA study crews in practice habitats?', a: ['To learn how to live together on long missions', 'To grow bigger vegetables', 'To test rover tires'], c: 0 } },
+  science: { sites: ['moon', 'mars'], kind: 'good', title: 'A strange sparkly rock', text: 'A crew member spotted a shiny rock near the base. It could tell a story about this place.',
+    choices: [C('Study it carefully', 'Costs 1 work shift. Lots of science points.', { shifts: -1, science: 18 }, 'The lab results were exciting. Mission Control wants more photos.'),
+      C('Grab a sample and move on', 'A few science points, no lost time.', { science: 7 }, 'The sample is bagged and labeled for later.')],
+    fact: 'Rocks tell the history of the Moon and Mars. Apollo astronauts brought back about 382 kilograms (842 pounds) of Moon rocks, and scientists still study them.',
+    quiz: { q: 'Why do scientists collect rocks?', a: ['They learn the history of a world', 'Rocks make good snacks', 'Rocks make the base lighter'], c: 0 } },
+  leak: { sites: ['moon', 'mars'], kind: 'trouble', title: 'Slow water leak', text: 'A pipe fitting in the water system is dripping. Drip. Drip. Drip.',
+    choices: [C('Fix the leak', 'Costs 1 work shift and a bit of water.', { shifts: -1, water: -3 }, 'A new seal went on and the dripping stopped.'),
+      C('Wipe it up and keep watching', 'Lose a lot of water.', { water: -14 }, 'The leak got worse overnight.')],
+    fact: 'On the space station, water from sweat, breath and even urine is cleaned and used again. NASA reports the system recovers about 98 percent of it.',
+    quiz: { q: 'What does the space station recycle?', a: ['Water, even from sweat and breath', 'Only plastic bags', 'Nothing at all'], c: 0 } },
+  panels_dusty: { sites: ['moon', 'mars'], kind: 'trouble', title: 'Dusty solar panels', text: 'Dust has settled on the solar panels and they are making less power.',
+    choices: [C('Wipe them off', 'Costs 1 work shift. Adds some power.', { shifts: -1, power: 8 }, 'The panels are shiny again.'),
+      C('Leave them', 'Panels make 30 percent less power until you do a Repair job.', { dmg: 'panels' }, 'The power meter looks a little sad.')],
+    fact: 'Dust is a big problem for solar power. On Mars, wind sometimes cleaned the rovers’ solar panels by accident. Engineers plan for dust on every mission.',
+    quiz: { q: 'What does dust do to solar panels?', a: ['It lowers the power they make', 'It makes them stronger', 'Nothing'], c: 0 } },
+  moon_dust: { sites: ['moon'], kind: 'trouble', title: 'Sticky moon dust', text: 'Moon dust is sharp, clingy and now it is inside the airlock.',
+    choices: [C('Do a dust-off routine', 'Costs 1 work shift.', { shifts: -1 }, 'Brushes, vacuum and a lot of patience. The airlock is clean.'),
+      C('Ignore it', 'Dust gets into the water recycler and the crew coughs.', { dmg: 'wr', crew: -4 }, 'The dust got into everything.')],
+    fact: 'Apollo astronauts found that moon dust stuck to everything and scratched their gear. Engineers now design suits and airlocks to keep it out.',
+    quiz: { q: 'What is moon dust like?', a: ['Soft like flour and harmless', 'Sharp and clingy', 'Wet and sticky'], c: 1 } },
+  ice_find: { sites: ['moon'], kind: 'good', title: 'Ice in the crater', text: 'Your rover scanned a dark crater floor and found a thick patch of ice.',
+    choices: [C('Drill deeper', 'Costs 1 work shift. Lots of water.', { shifts: -1, water: 20 }, 'The drill hit clean ice. The tanks are filling.'),
+      C('Mark it for later', 'A small science bonus.', { science: 5 }, 'The spot is logged on the map.')],
+    fact: 'Water ice hides in permanently shadowed craters near the Moon’s south pole. NASA’s LCROSS mission found water there in 2009, and Artemis explorers are heading to this region.',
+    quiz: { q: 'Where is water ice found on the Moon?', a: ['In dark craters near the poles', 'In the middle of sunny plains', 'Only in space rocks'], c: 0 } },
+  sunset_warn: { sites: ['moon'], kind: 'info', title: 'Sunset tomorrow', text: 'The Sun is going down for a long time. Your solar panels will stop making power. How do you get ready?',
+    choices: [C('Charge the batteries', 'Costs 1 work shift. More stored power.', { shifts: -1, power: 14 }, 'Every battery is at the top of its range.'),
+      C('Fill the tanks', 'Costs 1 work shift. More water and food.', { shifts: -1, water: 8, food: 8 }, 'Pantry full, tanks full.'),
+      C('Carry on as normal', 'No change.', {}, 'You decided to see what happens.')],
+    fact: 'One day on the Moon lasts about 29.5 Earth days. That means roughly 14 Earth days of sunlight and then about 14 days of night. In this game the night lasts 3 days.',
+    quiz: { q: 'How long is the lunar night on the real Moon?', a: ['About 14 Earth days', 'About 2 hours', 'About 1 year'], c: 0 } },
+  night_begins: { sites: ['moon'], kind: 'info', title: 'Lunar night begins', text: 'The Sun is gone. Solar panels make no power for 3 days. Heaters matter now: it is colder than minus 170 degrees Celsius outside.',
+    choices: [C('Got it, commander', 'Use stored power wisely.', {}, 'Lights down low. Time to be careful.')],
+    fact: 'NASA is studying small nuclear power systems for the Moon, because batteries and solar panels alone struggle in the two-week night.',
+    quiz: { q: 'Why is a long night hard for a Moon base?', a: ['Solar panels make no power', 'The Moon gets too bright', 'Radios stop working'], c: 0 } },
+  sunrise: { sites: ['moon'], kind: 'good', title: 'Sunrise!', text: 'The Sun is back. The panels wake up and the crew cheers.',
+    choices: [C('Enjoy the light', 'Mood boost.', { crew: 8 }, 'Sunshine on the solar panels. Power is flowing again.')],
+    fact: 'Light matters for people too. Space station crews use special lights to keep their sleep and mood on a healthy schedule.',
+    quiz: { q: 'What comes back at sunrise?', a: ['Solar power', 'Moon dust', 'Gravity'], c: 0 } },
+  dust_storm: { sites: ['mars'], kind: 'danger', title: 'Dust storm rolling in', text: 'A huge dust cloud is blocking the Sun. Solar power will drop for 2 days.',
+    choices: [C('Batten down the base', 'Costs 1 work shift. A little extra power.', { dustDays: 2, shifts: -1, power: 6 }, 'Tools stored, covers on, panels checked.'),
+      C('Race to charge the batteries', 'Quick EVA. Crew gets tired.', { dustDays: 2, power: 14, crew: -4 }, 'You squeezed out some power before the sky went orange.'),
+      C('Wait it out', 'No change.', { dustDays: 2 }, 'The sky turned the color of cinnamon.')],
+    fact: 'In 2018 a huge dust storm covered Mars. NASA’s solar-powered Opportunity rover could not get enough sunlight and went quiet. Future bases need extra power for storms.',
+    quiz: { q: 'What happened to Opportunity in the 2018 dust storm?', a: ['It lost sunlight and stopped talking', 'It drove faster', 'It found water'], c: 0 } },
+  comms: { sites: ['mars'], kind: 'info', title: 'Message from Earth', text: 'Mission Control sent advice. It took about 12 minutes to arrive, and your reply takes 12 more.',
+    choices: [C('Ask Mission Control and wait', 'Costs 1 work shift. They suggest a power-saving trick.', { shifts: -1, power: 6 }, 'Mission Control replied half an hour later. The tip worked.'),
+      C('Make the call yourselves', 'The crew feels trusted.', { crew: 4, science: 4 }, 'Your crew solved it. Mission Control says nice job.')],
+    fact: 'Radio signals between Mars and Earth take roughly 4 to 24 minutes one way, depending on where the planets are. A Mars crew must be able to decide things on their own.',
+    quiz: { q: 'How long do messages from Mars to Earth take?', a: ['A few minutes up to about 24', 'Less than a second', 'Several days'], c: 0 } },
+  perchlorate: { sites: ['mars'], kind: 'trouble', title: 'Toxic soil in the garden', text: 'Martian soil contains chemicals called perchlorates that are bad for people and plants.',
+    choices: [C('Wash the soil first', 'Costs 1 work shift and 8 water. Plants grow well.', { shifts: -1, water: -8, food: 8 }, 'Clean soil, happy plants.'),
+      C('Plant anyway', 'Smaller harvest and a sick crew.', { food: -6, crew: -5 }, 'The plants struggled and so did the crew.')],
+    fact: 'NASA’s Phoenix lander found perchlorates in Martian soil in 2008. Growing food on Mars will mean cleaning the soil or using special growing systems.',
+    quiz: { q: 'What did Phoenix find in Martian soil?', a: ['Perchlorates, which are toxic', 'Pizza', 'Gold'], c: 0 } },
+  moxie: { sites: ['mars'], kind: 'good', title: 'Make air from the air', text: 'Mars air is almost all carbon dioxide. Your oxygen-maker prototype can split it into oxygen.',
+    choices: [C('Run it hard', 'Uses 12 power. Gives a lot of oxygen.', { power: -12, o2: 22 }, 'A new tank of oxygen, made from Martian air.'),
+      C('Skip it', 'Save the power.', {}, 'Maybe next time.')],
+    fact: 'NASA’s Perseverance rover carries an experiment called MOXIE that made oxygen from Mars air. Its first run made about 5 grams, about 10 minutes of breathing for an astronaut.',
+    quiz: { q: 'What did MOXIE make from Mars air?', a: ['Oxygen', 'Water', 'Fuel for the rover'], c: 0 } }
+};
+
+function makeSchedule(site, diff, s) {
+  var sched = [null, null, null, null, null, null, null, null, null];
+  function free() { var r = []; for (var d = 1; d <= MAX_DAY; d++) if (!sched[d]) r.push(d); return r; }
+  function place(id, cands) {
+    var f = cands.filter(function (d) { return !sched[d]; });
+    if (!f.length) f = free().filter(function (d) { return d > 1; });
+    if (!f.length) return;
+    sched[f[Math.floor(rnd(s) * f.length)]] = id;
+  }
+  sched[1] = 'cargo';
+  if (site === 'moon') { sched[3] = 'sunset_warn'; sched[4] = 'night_begins'; sched[7] = 'sunrise'; place('flare', [2, 5, 6]); if (diff === 'commander') place('flare', [8, 5, 6]); }
+  else { place('dust_storm', [3, 4, 5]); place('flare', [2, 6]); if (diff === 'commander') place('flare', [7, 8]); }
+  var pool = ['equip', 'micro', 'homesick', 'science', 'leak', 'panels_dusty'].concat(site === 'moon' ? ['moon_dust', 'ice_find'] : ['comms', 'perchlorate', 'moxie']);
+  for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(rnd(s) * (i + 1)); var t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+  free().forEach(function (d, k) { sched[d] = pool[k]; });
+  return sched;
+}
+
+function newGame(site, diff, seed) {
+  var D = DIFFS[diff] || DIFFS.cadet;
+  var s = { site: site, diff: diff, rs: (seed === undefined ? Date.now() : seed) | 0, day: 1, maxDay: MAX_DAY, science: 0, panelBonus: 0, dmg: null, dust: 0, shiftDelta: 0, quizRight: 0, status: 'playing', failReason: '', history: [] };
+  METERS.forEach(function (m) { s[m] = D.start[m]; });
+  s.sched = makeSchedule(site, diff, s);
+  return s;
+}
+
+function isNight(s) { return s.site === 'moon' && s.day >= 4 && s.day <= 6; }
+function coldNeed(s) { return s.site === 'moon' ? (isNight(s) ? 2 : 0) : 1; }
+function shiftsAvailable(s) { return Math.max(1, BASE_SHIFTS + s.shiftDelta); }
+function radDamage(s, k) { return Math.max(0, k - s.shield * 0.3); }
+function eventFor(s) { return EVENTS[s.sched[s.day]]; }
+function emptyPlan() { return { ls: 0, wr: 0, gh: 0, ht: 0, tasks: { ice: 0, garden: 0, wall: 0, solar: 0, repair: 0, science: 0, rest: 0, comms: 0 } }; }
+function taskCount(plan) { return TASKS.reduce(function (a, t) { return a + (plan.tasks[t] || 0); }, 0); }
+function blockCount(plan) { return SYSTEMS.reduce(function (a, k) { return a + (plan[k] || 0); }, 0); }
+
+function applyChoice(s, ev, i) {
+  var fx = ev.choices[i].fx, out = { radHit: 0 };
+  ['power', 'o2', 'water', 'food', 'shield', 'crew'].forEach(function (m) { if (fx[m]) s[m] = clamp(s[m] + fx[m]); });
+  if (fx.science) s.science += fx.science;
+  if (fx.rad) { var d = radDamage(s, fx.rad); s.crew = clamp(s.crew - d); out.radHit = d; }
+  if (fx.shifts) s.shiftDelta += fx.shifts;
+  if (fx.dmg) s.dmg = fx.dmg;
+  if (fx.dustDays) s.dust = fx.dustDays;
+  return out;
+}
+
+/* Resolve one day. Mutates s; returns a report. */
+function resolveDay(s, plan) {
+  var site = SITES[s.site], D = DIFFS[s.diff] || DIFFS.cadet, T = plan.tasks, before = {}, notes = [];
+  METERS.forEach(function (m) { before[m] = s[m]; });
+  var night = isNight(s), dust = s.dust > 0;
+  var genMult = night ? 0 : dust ? 0.25 : 1;
+  if (s.dmg === 'panels') genMult *= 0.7;
+  var gen = (site.gen + s.panelBonus) * genMult;
+  var repaired = false;
+  if (T.repair > 0) { if (s.dmg) { s.dmg = null; repaired = true; notes.push('Repair crew fixed the broken system.'); } else { s.o2 = clamp(s.o2 + 5 * T.repair); notes.push('Maintenance crew swapped filters (+oxygen).'); } }
+  var solarPower = 10 * T.solar;
+  s.panelBonus = Math.min(8, s.panelBonus + 2 * T.solar);
+  var blocks = blockCount(plan);
+  var needed = blocks * BLOCK_COST + STANDBY;
+  var avail = s.power + gen + solarPower;
+  var factor = avail >= needed ? 1 : Math.max(0, avail) / needed;
+  if (factor < 1) notes.push('Brownout! Only ' + Math.round(factor * 100) + '% of the powered systems could run.');
+  s.power = factor < 1 ? 0 : Math.min(100, avail - needed);
+  var half = function (k) { return s.dmg === k ? 0.5 : 1; };
+  if (s.dmg) notes.push('Something is broken, so one system works at half power. Use a Repair job.');
+  s.o2 += -TUNE.o2 * D.drain + plan.ls * TUNE.ls * factor * half('ls');
+  s.water += -TUNE.water * D.drain + plan.wr * TUNE.wr * factor * half('wr') - plan.gh * 2 + T.ice * TUNE.ice;
+  s.food += -TUNE.food * D.drain + plan.gh * TUNE.gh * factor * half('gh') + T.garden * TUNE.garden;
+  s.shield = clamp(s.shield + T.wall * 12);
+  var crew = -TUNE.crew - Math.max(0, 40 - s.shield) * 0.05 * site.radFactor + T.rest * 10 + T.science * 3 + T.comms * 4;
+  var heat = plan.ht * factor, cold = coldNeed(s), short = Math.max(0, cold - heat);
+  if (short > 0) { crew -= short * 5; notes.push('Too cold inside. The crew is shivering.'); }
+  crew += Math.max(0, heat - cold) * 2;
+  s.o2 = clamp(s.o2); s.water = clamp(s.water); s.food = clamp(s.food);
+  ['o2', 'water', 'food'].forEach(function (m) { if (s[m] < 25) crew -= (25 - s[m]) * 0.3; });
+  if (s.power <= 0) crew -= 2;
+  s.crew = clamp(s.crew + crew);
+  s.science += T.science * 10;
+  var deltas = {};
+  METERS.forEach(function (m) { deltas[m] = Math.round(s[m] - before[m]); });
+  s.history.push({ day: s.day, power: s.power, o2: s.o2, water: s.water, food: s.food, shield: s.shield, crew: s.crew });
+  if (s.dust > 0) s.dust--;
+  s.shiftDelta = 0;
+  if (s.o2 <= 0) { s.status = 'failed'; s.failReason = 'o2'; }
+  else if (s.water <= 0) { s.status = 'failed'; s.failReason = 'water'; }
+  else if (s.food <= 0) { s.status = 'failed'; s.failReason = 'food'; }
+  else if (s.crew <= 0) { s.status = 'failed'; s.failReason = 'crew'; }
+  else if (s.day >= s.maxDay) s.status = 'won';
+  else s.day++;
+  return { deltas: deltas, notes: notes, gen: Math.round(gen), factor: factor };
+}
+
+/* Non-destructive forecast of how today's plan would change each meter. */
+function preview(s, plan) {
+  var c = clone(s); var r = resolveDay(c, plan);
+  var after = {}; METERS.forEach(function (m) { after[m] = c[m]; });
+  return { deltas: r.deltas, after: after, status: c.status, failReason: c.failReason, notes: r.notes, gen: r.gen, factor: r.factor };
+}
+function genToday(s) {
+  var site = SITES[s.site], mult = isNight(s) ? 0 : (s.dust > 0 ? 0.25 : 1);
+  if (s.dmg === 'panels') mult *= 0.7;
+  return Math.round((site.gen + s.panelBonus) * mult);
+}
+
+function finalScore(s) {
+  var avg = METERS.reduce(function (a, m) { return a + s[m]; }, 0) / METERS.length;
+  var minM = Math.min.apply(null, METERS.map(function (m) { return s[m]; }));
+  var stars = 0;
+  if (s.status === 'won') { stars = 1; if (minM >= 30 && s.science >= 30) stars = 2; if (minM >= 45 && s.science >= 55 && avg >= 60) stars = 3; }
+  var pts = Math.round(s.science * 5 + avg * 4 + (s.day) * 25 + (s.status === 'won' ? 150 : 0));
+  return { avg: Math.round(avg), min: Math.round(minM), stars: stars, points: pts };
+}
+
+var api = { METERS: METERS, TASKS: TASKS, SYSTEMS: SYSTEMS, SITES: SITES, DIFFS: DIFFS, EVENTS: EVENTS, MAX_DAY: MAX_DAY, BLOCK_COST: BLOCK_COST, STANDBY: STANDBY, MAX_BLOCKS: MAX_BLOCKS,
+  newGame: newGame, eventFor: eventFor, applyChoice: applyChoice, resolveDay: resolveDay, preview: preview, genToday: genToday, finalScore: finalScore, emptyPlan: emptyPlan,
+  shiftsAvailable: shiftsAvailable, taskCount: taskCount, blockCount: blockCount, radDamage: radDamage, isNight: isNight, coldNeed: coldNeed, clone: clone, rnd: rnd, clamp: clamp };
+if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Engine = api;
+})(typeof window !== 'undefined' ? window : this);
+
+</script>
+<script>
+(function () {
+'use strict';
+var E = window.Engine;
+function $(id) { return document.getElementById(id); }
+var G = null, plan = null, phase = 'title', cur = { site: 'moon', diff: 'cadet' }, lastChoice = null, quizDone = false, lastReport = null, prevScreen = 'title', soundOn = true, flareDay = false, tipSeen = false;
+var CREW = [{ n: 'Ava', r: 'Commander', c: '#ff7eb6' }, { n: 'Kofi', r: 'Engineer', c: '#ffc233' }, { n: 'Mei', r: 'Scientist', c: '#5ee08a' }, { n: 'Raj', r: 'Doctor', c: '#5cc8ff' }];
+var MI = {
+  power: { label: 'Power', icon: 'i-power', color: 'var(--c-power)' }, o2: { label: 'Oxygen', icon: 'i-o2', color: 'var(--c-o2)' }, water: { label: 'Water', icon: 'i-water', color: 'var(--c-water)' },
+  food: { label: 'Food', icon: 'i-food', color: 'var(--c-food)' }, shield: { label: 'Shield', icon: 'i-shield', color: 'var(--c-shield)' }, crew: { label: 'Crew', icon: 'i-crew', color: 'var(--c-crew)' }
+};
+var SYS = {
+  ls: { name: 'Life support', desc: 'Makes oxygen and cleans the air.' }, wr: { name: 'Water recycler', desc: 'Cleans used water so it can be drunk again.' },
+  gh: { name: 'Greenhouse lights', desc: 'Grows food, but the plants drink some water.' }, ht: { name: 'Heaters and lights', desc: 'Keeps the crew warm and cheerful.' }
+};
+var TASK = {
+  ice: { name: 'Mine ice', desc: '+12 water', eva: true }, garden: { name: 'Tend the garden', desc: '+9 food' },
+  wall: { name: 'Pile a soil wall', desc: '+12 shield', eva: true }, solar: { name: 'Tune solar panels', desc: '+10 power now, and a little more sun power for good', eva: true },
+  repair: { name: 'Repair and maintain', desc: 'Fixes broken gear, or +5 oxygen' }, science: { name: 'Science experiment', desc: '+10 science, +3 crew' },
+  rest: { name: 'Rest and exercise', desc: '+10 crew' }, comms: { name: 'Call Mission Control', desc: '+4 crew, and a peek at tomorrow' }
+};
+var KIND = { good: 'Good news', danger: 'Alert', trouble: 'Trouble', crew: 'Crew', info: 'Heads up' };
+var LESSONS = {
+  power: 'Power runs everything. Real outposts need batteries and backup power, especially for the long lunar night and Martian dust storms.',
+  o2: 'Oxygen is the most urgent need. Real life-support machines must keep running, so spare parts and repair skills matter.',
+  water: 'Water is heavy to launch, so habitats recycle it. The space station recovers about 98 percent of its water.',
+  food: 'Growing food saves cargo space, but plants need light, water and power. That is a real engineering trade-off.',
+  shield: 'Radiation is a hidden danger. Thick walls of water or soil protect crews, and storm shelters help during solar flares.',
+  crew: 'People are part of the system. Rest, exercise and contact with home keep a crew healthy and working well on long missions.'
+};
+
+/* ---------- sound ---------- */
+var ac = null;
+function beep(f, d, type, delay) {
+  if (!soundOn) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    var o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + (delay || 0);
+    o.type = type || 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d + 0.05);
+  } catch (e) {}
+}
+function sfx(k) {
+  if (k === 'click') beep(620, 0.08, 'triangle');
+  else if (k === 'good') { beep(660, 0.12, 'triangle'); beep(880, 0.16, 'triangle', 0.1); }
+  else if (k === 'bad') { beep(300, 0.18, 'sawtooth'); beep(220, 0.22, 'sawtooth', 0.14); }
+  else if (k === 'alarm') { beep(520, 0.15, 'square'); beep(520, 0.15, 'square', 0.25); }
+  else if (k === 'win') { [523, 659, 784, 1047].forEach(function (f, i) { beep(f, 0.18, 'triangle', i * 0.13); }); }
+}
+
+/* ---------- storage ---------- */
+function getBest() { try { return JSON.parse(localStorage.getItem('outpostzero-best') || '{}'); } catch (e) { return {}; } }
+function setBest(k, v) { try { var b = getBest(); if (!b[k] || v > b[k]) { b[k] = v; localStorage.setItem('outpostzero-best', JSON.stringify(b)); } } catch (e) {} }
+
+/* ---------- helpers ---------- */
+function sg(n) { n = Math.round(n); return (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n); }
+function chip(t, cls) { return '<span class="chip ' + (cls || '') + '">' + t + '</span>'; }
+function chipsFor(fx) {
+  var N = { power: 'Power', o2: 'Oxygen', water: 'Water', food: 'Food', shield: 'Shield', crew: 'Crew', science: 'Science' }, out = [];
+  Object.keys(N).forEach(function (k) { if (fx[k]) out.push(chip(N[k] + ' ' + sg(fx[k]), fx[k] > 0 ? 'good' : 'bad')); });
+  if (fx.shifts) out.push(chip('Work shifts ' + sg(fx.shifts), 'bad'));
+  if (fx.rad) { var d = E.radDamage({ shield: Math.min(100, G.shield + (fx.shield || 0)) }, fx.rad); out.push(d < 1 ? chip('No radiation harm', 'good') : chip('Radiation: crew −' + Math.round(d), 'bad')); }
+  if (fx.dmg) out.push(chip('Something breaks', 'bad'));
+  if (fx.dustDays) out.push(chip('Dust storm, ' + fx.dustDays + ' days', 'bad'));
+  return out.join('');
+}
+function show(id) { ['title', 'game', 'end', 'about'].forEach(function (s) { $(s).hidden = s !== id; }); $('pips').hidden = id !== 'game'; window.scrollTo(0, 0); }
+function icon(k) { return '<svg aria-hidden="true" style="color:' + MI[k].color + '"><use href="#' + MI[k].icon + '"/></svg>'; }
+function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+/* ---------- scene ---------- */
+function buildScene() {
+  var st = '', seed = 7;
+  for (var i = 0; i < 48; i++) { seed = (seed * 9301 + 49297) % 233280; var x = seed / 233280 * 720; seed = (seed * 9301 + 49297) % 233280; var y = seed / 233280 * 170; seed = (seed * 9301 + 49297) % 233280; st += '<circle class="star" cx="' + x.toFixed(0) + '" cy="' + y.toFixed(0) + '" r="' + (1 + seed / 233280 * 1.4).toFixed(1) + '" style="animation-delay:-' + (seed / 233280 * 3).toFixed(1) + 's"/>'; }
+  $('stars').innerHTML = st;
+  var ps = '';
+  for (var p = 0; p < 6; p++) { var x0 = 30 + p * 34; ps += '<g class="panel-s" id="pn' + p + '"><line x1="' + (x0 + 15) + '" y1="232" x2="' + (x0 + 15) + '" y2="238"/><polygon points="' + x0 + ',232 ' + (x0 + 30) + ',232 ' + (x0 + 36) + ',208 ' + (x0 + 6) + ',208"/></g>'; }
+  $('panels').innerHTML = ps;
+  var pl = '', pos = [[648, 226, 5], [662, 222, 6], [676, 226, 5], [655, 230, 4], [670, 231, 4]];
+  pos.forEach(function (q, i) { pl += '<circle class="plant" id="pl' + i + '" cx="' + q[0] + '" cy="' + q[1] + '" r="' + q[2] + '"/>'; });
+  $('plants').innerHTML = pl;
+}
+function renderScene() {
+  var sc = $('scene'); sc.setAttribute('data-site', G.site);
+  sc.classList.toggle('night', E.isNight(G)); sc.classList.toggle('dust', G.dust > 0); sc.classList.toggle('flare', flareDay);
+  var n = 2 + Math.floor(G.panelBonus / 2);
+  for (var i = 0; i < 6; i++) $('pn' + i).classList.toggle('off', i >= n);
+  $('hab').classList.toggle('lit', G.power > 8);
+  var h = 10 + G.shield * 0.55;
+  $('wallP').setAttribute('d', 'M450 238 Q 500 ' + (238 - h * 1.3).toFixed(0) + ' 530 ' + (238 - h).toFixed(0) + ' T 610 238 Z');
+  var np = Math.ceil(G.food / 20);
+  for (var j = 0; j < 5; j++) $('pl' + j).classList.toggle('off', j >= np);
+  var moon = G.site === 'moon';
+  $('earthDisc').setAttribute('r', moon ? 15 : 5); $('earthLand').style.display = moon ? '' : 'none'; $('sunDisc').setAttribute('r', moon ? 20 : 13);
+  $('siteBadge').textContent = E.SITES[G.site].name + ' base';
+  var gen = E.genToday(G);
+  $('sunBadge').textContent = E.isNight(G) ? 'Night: no solar power' : G.dust > 0 ? 'Dust storm: sun power ' + gen : 'Sun power ' + gen + ' per day';
+}
+function face(c, mood) {
+  var mouth = mood === 2 ? 'M20 36 Q27 43 34 36' : mood === 1 ? 'M21 38 L33 38' : 'M20 40 Q27 33 34 40';
+  return '<svg viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="24" fill="#f6f5ff" stroke="' + c + '" stroke-width="4"/><rect x="10" y="15" width="34" height="30" rx="15" fill="#1d1a45"/><circle cx="21" cy="28" r="3" fill="#fff"/><circle cx="33" cy="28" r="3" fill="#fff"/><path d="' + mouth + '" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>';
+}
+function renderCrew() {
+  var mood = G.crew > 66 ? 2 : G.crew > 33 ? 1 : 0;
+  $('crew').innerHTML = CREW.map(function (m) { return '<div class="mate">' + face(m.c, mood) + '<b>' + m.n + '</b>' + m.r + '</div>'; }).join('');
+}
+
+/* ---------- meters ---------- */
+function buildMeters() {
+  $('meters').innerHTML = E.METERS.map(function (k) {
+    return '<div class="meter" id="m-' + k + '"><div class="m-head">' + icon(k) + '<span class="m-name">' + MI[k].label + '</span><span class="m-val" id="v-' + k + '">0</span></div><div class="bar"><i id="b-' + k + '" style="background:' + MI[k].color + '"></i></div><div class="m-foot"><span class="m-state" id="s-' + k + '"></span><span class="delta" id="d-' + k + '"></span></div></div>';
+  }).join('');
+}
+function renderMeters(prev) {
+  E.METERS.forEach(function (k) {
+    var v = Math.round(G[k]); $('v-' + k).textContent = v; $('b-' + k).style.width = v + '%';
+    var el = $('m-' + k); el.classList.toggle('low', v < 50 && v >= 25); el.classList.toggle('crit', v < 25);
+    $('s-' + k).textContent = v >= 50 ? 'Good' : v >= 25 ? 'Low' : 'Critical';
+    var d = $('d-' + k);
+    if (prev) { var dv = prev.deltas[k]; d.className = 'delta ' + (dv > 0 ? 'up' : dv < 0 ? 'down' : 'flat'); d.textContent = (dv > 0 ? '▲ ' : dv < 0 ? '▼ ' : '– ') + (dv ? Math.abs(dv) : '0') + ' tomorrow'; } else { d.className = 'delta'; d.textContent = ''; }
+  });
+}
+function renderPips() {
+  var h = ''; for (var d = 1; d <= E.MAX_DAY; d++) h += '<span class="pip ' + (d < G.day || G.status === 'won' ? 'done' : d === G.day ? 'now' : '') + '">' + d + '</span>';
+  $('pips').innerHTML = h;
+}
+function refresh(prev) { renderScene(); renderCrew(); renderMeters(prev); renderPips(); }
+
+/* ---------- panel phases ---------- */
+function setPanel(html) { $('panel').innerHTML = html; }
+function briefing() {
+  phase = 'briefing'; var ev = E.eventFor(G); flareDay = false;
+  refresh(null);
+  if (ev === E.EVENTS.flare) sfx('alarm');
+  var h = '<div class="kicker">Day ' + G.day + ' of ' + E.MAX_DAY + ' <span class="tag ' + ev.kind + '">' + KIND[ev.kind] + '</span></div><h2>' + ev.title + '</h2><p class="txt">' + ev.text + '</p><div class="choices">';
+  ev.choices.forEach(function (c, i) { h += '<button class="choice" data-act="choose" data-i="' + i + '"><span class="ct">' + c.t + '</span><span class="cd">' + c.d + '</span><span class="chips">' + chipsFor(c.fx) + '</span></button>'; });
+  setPanel(h + '</div>');
+}
+function choose(i) {
+  var ev = E.eventFor(G); lastChoice = { ev: ev, i: i }; quizDone = false;
+  var fx = ev.choices[i].fx; E.applyChoice(G, ev, i);
+  if (ev === E.EVENTS.flare) flareDay = true;
+  var good = (fx.science || 0) > 0 || (fx.power || 0) > 0 || (fx.food || 0) > 0 || (fx.water || 0) > 0 || (fx.o2 || 0) > 0 || (fx.crew || 0) > 0;
+  sfx(good ? 'good' : 'bad');
+  result();
+}
+function result() {
+  phase = 'result'; refresh(null);
+  var ev = lastChoice.ev, c = ev.choices[lastChoice.i], q = ev.quiz;
+  var h = '<div class="kicker">Day ' + G.day + ' <span class="tag ' + ev.kind + '">' + KIND[ev.kind] + '</span></div><h2>' + ev.title + '</h2><p class="txt">' + c.res + '</p><div class="chips" style="margin-top:10px">' + chipsFor(c.fx).replace(/Radiation: crew −\d+/, function (m) { return m; }) + '</div>';
+  h += '<div class="fact"><b>Real NASA fact</b>' + ev.fact + '</div>';
+  var order = shuffle(q.a.map(function (_, i) { return i; }));
+  h += '<div class="quiz"><h3>Mission Control asks: ' + q.q + '</h3><div class="qopts">';
+  order.forEach(function (oi) { h += '<button class="qopt" data-act="quiz" data-i="' + oi + '">' + q.a[oi] + '</button>'; });
+  h += '</div><div class="qfeed" id="qfeed">Optional bonus question: +5 science for a right answer.</div></div>';
+  h += '<div class="cta"><button class="btn" data-act="toPlan">Plan the day</button></div>';
+  setPanel(h);
+}
+function answer(i, btn) {
+  if (quizDone) return; quizDone = true; var q = lastChoice.ev.quiz, ok = i === q.c;
+  var opts = document.querySelectorAll('.qopt');
+  opts.forEach(function (b) { var bi = +b.getAttribute('data-i'); if (bi === q.c) b.classList.add('right'); else if (b === btn) b.classList.add('wrong'); b.disabled = true; });
+  if (ok) { G.science += 5; G.quizRight++; G.crew = E.clamp(G.crew + 3); $('qfeed').textContent = 'Correct! +5 science and the crew cheers.'; sfx('good'); }
+  else { $('qfeed').textContent = 'Not quite. The right answer is highlighted. You will remember it next time.'; sfx('bad'); }
+  renderMeters(null);
+}
+function toPlan() { plan = E.emptyPlan(); phase = 'plan'; sfx('click'); renderPlan(); }
+
+function renderPlan() {
+  var pv = E.preview(G, plan); refresh(pv);
+  var left = E.shiftsAvailable(G) - E.taskCount(plan), blocks = E.blockCount(plan), cost = blocks * E.BLOCK_COST + E.STANDBY, gen = E.genToday(G), avail = Math.round(G.power + gen + 10 * plan.tasks.solar);
+  var h = '<div class="kicker">Day ' + G.day + ' of ' + E.MAX_DAY + ' · Planning</div><h2>Plan the day</h2>';
+  h += '<div class="sect" style="margin-top:8px"><h3>Power blocks <small>each block costs ' + E.BLOCK_COST + ' power</small></h3>';
+  E.SYSTEMS.forEach(function (k) {
+    var v = plan[k], pips = ''; for (var b = 0; b < E.MAX_BLOCKS; b++) pips += '<span class="blk ' + (b < v ? 'on' : '') + '"></span>';
+    var extra = k === 'ht' && E.coldNeed(G) ? ' Needs ' + E.coldNeed(G) + ' block' + (E.coldNeed(G) > 1 ? 's' : '') + ' today.' : '';
+    h += '<div class="ctrl"><div><div class="nm">' + SYS[k].name + (G.dmg === {ls:'ls',wr:'wr',gh:'gh'}[k] ? ' <span class="chip bad">Broken: half power</span>' : '') + '</div><div class="ds">' + SYS[k].desc + extra + '</div></div>' +
+      '<div class="stepper"><button data-act="sys" data-k="' + k + '" data-d="-1" aria-label="Less power to ' + SYS[k].name + '"' + (v <= 0 ? ' disabled' : '') + '>−</button><span class="blocks" aria-label="' + v + ' blocks">' + pips + '</span><button data-act="sys" data-k="' + k + '" data-d="1" aria-label="More power to ' + SYS[k].name + '"' + (v >= E.MAX_BLOCKS ? ' disabled' : '') + '>+</button></div></div>';
+  });
+  h += '<div class="budget"><span>Battery ' + Math.round(G.power) + ' + sun ' + gen + (plan.tasks.solar ? ' + panel tuning ' + 10 * plan.tasks.solar : '') + ' = ' + avail + '</span><span class="' + (cost > avail ? 'over' : '') + '">Machines use ' + cost + ' (including ' + E.STANDBY + ' standby)</span></div></div>';
+  h += '<div class="sect"><h3>Crew shifts <small>' + left + ' of ' + E.shiftsAvailable(G) + ' left</small></h3>';
+  E.TASKS.forEach(function (k) {
+    var v = plan.tasks[k], nm = k === 'wall' ? (G.site === 'moon' ? 'Pile a moon-soil wall' : 'Pile a Mars-soil wall') : TASK[k].name;
+    var extra = '';
+    if (k === 'comms' && v > 0) extra = ' <b style="color:var(--c-o2)">Tomorrow: ' + (G.day < E.MAX_DAY ? E.EVENTS[G.sched[G.day + 1]].title : 'mission ends') + '</b>';
+    h += '<div class="ctrl"><div><div class="nm">' + nm + (TASK[k].eva ? '<span class="eva">EVA</span>' : '') + '</div><div class="ds">' + TASK[k].desc + extra + '</div></div>' +
+      '<div class="stepper"><button data-act="task" data-k="' + k + '" data-d="-1" aria-label="Fewer shifts: ' + nm + '"' + (v <= 0 ? ' disabled' : '') + '>−</button><span class="count">' + v + '</span><button data-act="task" data-k="' + k + '" data-d="1" aria-label="More shifts: ' + nm + '"' + (left <= 0 ? ' disabled' : '') + '>+</button></div></div>';
+  });
+  h += '</div>';
+  if (pv.status === 'failed') { var why = { o2: 'Oxygen would run out', water: 'Water would run out', food: 'Food would run out', crew: 'The crew would be too tired to continue' }[pv.failReason]; h += '<div class="alert">Danger! ' + why + ' with this plan. Change something.</div>'; }
+  else if (pv.factor < 1) h += '<div class="alert">Brownout: not enough power for everything. Only ' + Math.round(pv.factor * 100) + '% of the machines would run. Turn some off or tune the solar panels.</div>';
+  else if (pv.notes.length) h += '<div class="alert">' + pv.notes[0] + '</div>';
+  if (G.day === 1 && !tipSeen) h += '<div class="tip">Tip: watch the small arrows on the meters. They show what tomorrow will look like if you keep this plan.</div>';
+  h += '<div class="tip" id="hint" hidden></div>';
+  h += '<div class="cta"><button class="btn big" data-act="end">' + (G.day >= E.MAX_DAY ? 'Finish the mission' : 'End the day') + '</button><button class="btn ghost" data-act="hint">Ask for advice</button></div>';
+  setPanel(h);
+}
+function hint() {
+  var t = '';
+  if (E.coldNeed(G) && plan.ht < E.coldNeed(G)) t = 'It is very cold. Heaters need ' + E.coldNeed(G) + ' power block' + (E.coldNeed(G) > 1 ? 's' : '') + ' today or the crew will shiver.';
+  else {
+    var worst = null, wv = 50;
+    E.METERS.forEach(function (k) { if (G[k] < wv) { wv = G[k]; worst = k; } });
+    var T = {
+      o2: 'Oxygen is low. Give Life support 2 power blocks, or add a Repair and maintain shift (+5 oxygen).', water: 'Water is low. Switch on the Water recycler or send a crew shift to Mine ice.',
+      food: 'Food is low. Turn on the Greenhouse lights or Tend the garden.', power: E.isNight(G) ? 'Power is low and the panels make nothing at night. Turn off machines you can live without for a day.' : 'Power is low. Tune the solar panels and use fewer blocks.',
+      shield: 'Shield is low. Piling soil into a wall protects the crew from radiation.', crew: 'The crew needs a lift. Try Rest and exercise or call Mission Control.'
+    };
+    t = worst ? 'Mission Control says: ' + T[worst] : 'Mission Control says: everything looks healthy. Try a Science experiment to earn points.';
+  }
+  var el = $('hint'); el.hidden = false; el.textContent = t; sfx('click');
+}
+function endDay() {
+    var shown = G.day;
+  lastReport = E.resolveDay(G, plan); tipSeen = true; flareDay = false;
+  if (G.status !== 'playing') return finish();
+  phase = 'report'; refresh(null);
+  var h = '<div class="kicker">Day ' + shown + ' complete</div><h2>Day report</h2><div class="rep">';
+  E.METERS.forEach(function (k) { var d = lastReport.deltas[k]; h += '<div><span>' + MI[k].label + '</span><span class="delta ' + (d > 0 ? 'up' : d < 0 ? 'down' : 'flat') + '">' + (d > 0 ? '▲ ' : d < 0 ? '▼ ' : '') + Math.abs(d) + '</span></div>'; });
+  h += '</div>';
+  if (lastReport.notes.length) h += '<ul class="notes">' + lastReport.notes.map(function (n) { return '<li>' + n + '</li>'; }).join('') + '</ul>';
+  h += '<div class="cta"><button class="btn big" data-act="next">Start day ' + G.day + '</button></div>';
+  setPanel(h); sfx('click');
+}
+
+/* ---------- ending ---------- */
+function starsSvg(n) { var h = ''; for (var i = 0; i < 3; i++) h += '<svg viewBox="0 0 24 24" aria-hidden="true" style="fill:' + (i < n ? 'var(--sun)' : '#3a3477') + '"><use href="#i-star"/></svg>'; return '<div class="stars" role="img" aria-label="' + n + ' of 3 stars">' + h + '</div>'; }
+function finish() {
+  phase = 'end'; refresh(null);
+  var sc = E.finalScore(G), won = G.status === 'won', name = E.SITES[G.site].name;
+  var rank = !won ? 'Mission trainee' : sc.stars === 3 ? 'Mission Hero' : sc.stars === 2 ? 'Mission Commander' : 'Junior Astronaut';
+  if (won) { setBest(G.site + '-' + G.diff, sc.points); sfx('win'); } else sfx('bad');
+  var failTxt = { o2: 'The oxygen ran out, so the crew had to leave early.', water: 'The water ran out, so the crew had to leave early.', food: 'The food ran out, so the crew had to leave early.', crew: 'The crew was too exhausted to continue.' }[G.failReason];
+  var meters = E.METERS.slice().sort(function (a, b) { return G[a] - G[b]; });
+  var lows = meters.slice(0, 2).map(function (k) { return '<li><b>' + MI[k].label + ' (' + Math.round(G[k]) + '):</b> ' + LESSONS[k] + '</li>'; }).join('');
+  var mini = E.METERS.map(function (k) { return '<div><span>' + MI[k].label + '</span><span>' + Math.round(G[k]) + '</span></div>'; }).join('');
+  var h = '<div class="end-grid"><div class="card"><div class="kicker">' + name + ' · ' + E.DIFFS[G.diff].name + ' level</div><h2 style="font-size:34px;margin-top:6px">' + (won ? 'Mission complete!' : 'Mission ended early') + '</h2>' +
+    '<p class="txt" style="margin-top:6px">' + (won ? 'All four astronauts stayed healthy for ' + E.MAX_DAY + ' days. Great leadership.' : failTxt + ' Everyone returned to Earth safely. Real teams learn from missions like this.') + '</p>' +
+    starsSvg(sc.stars) + '<div class="score">' + sc.points + ' points</div><p style="color:var(--muted)">Rank: <b style="color:var(--ink)">' + rank + '</b> · Science ' + G.science + ' · Quiz ' + G.quizRight + ' right</p>' +
+    '<div class="mini">' + mini + '</div><h3 style="margin-top:18px">Engineer’s report</h3><p style="color:var(--muted);margin-top:4px">Your two weakest systems and what real missions do about them:</p><ul class="lessons">' + lows + '</ul>' +
+    '<div class="cta"><button class="btn" data-act="again">Play again</button><button class="btn ghost" data-act="other">Try ' + (G.site === 'moon' ? 'Mars' : 'the Moon') + '</button><button class="btn ghost" data-act="home">Home</button></div></div>' +
+    '<div class="card"><h3 style="font-size:22px">' + (won ? 'Your certificate' : 'Try again for a certificate') + '</h3>' +
+    (won ? '<label for="nameIn" class="kicker" style="margin-top:8px">Type your name</label><input class="nameinput" id="nameIn" maxlength="28" placeholder="Your name" autocomplete="off"><div class="cert" style="margin-top:14px"><h3>Junior Astronaut Certificate</h3><p>This certifies that</p><div class="nm" id="certName">Space Explorer</div><p>commanded an outpost on ' + (G.site === 'moon' ? 'the Moon' : 'Mars') + ' for ' + E.MAX_DAY + ' days<br>and earned the rank of <b>' + rank + '</b>.</p><p style="margin-top:8px">Outpost Zero · NASA Space Apps Challenge 2026</p></div>' : '<p class="txt" style="margin-top:8px">Win a mission to unlock the certificate. Try keeping power blocks lower during the night and use the advice button when a meter is low.</p>') +
+    '<div class="photo" id="photo" hidden></div></div></div>';
+  $('end').innerHTML = h; show('end');
+  var ni = $('nameIn'); if (ni) ni.addEventListener('input', function () { $('certName').textContent = ni.value.trim() || 'Space Explorer'; });
+  nasaPhoto();
+}
+function nasaPhoto() {
+  var q = G.site === 'moon' ? 'Artemis Moon south pole' : 'Perseverance Mars Jezero';
+  try {
+    fetch('https://images-api.nasa.gov/search?media_type=image&q=' + encodeURIComponent(q)).then(function (r) { return r.json(); }).then(function (j) {
+      var items = (j.collection && j.collection.items || []).filter(function (it) { return it.links && it.links[0] && it.data && it.data[0]; }).slice(0, 15);
+      if (!items.length) return; var it = items[Math.floor(Math.random() * items.length)], el = $('photo'); if (!el) return;
+      var img = document.createElement('img'); img.alt = it.data[0].title || 'NASA image'; img.src = it.links[0].href;
+      img.onload = function () { el.hidden = false; }; el.appendChild(img);
+      var cap = document.createElement('small'); cap.textContent = 'Image: NASA. ' + (it.data[0].title || ''); el.appendChild(cap);
+    }).catch(function () {});
+  } catch (e) {}
+}
+
+/* ---------- flow ---------- */
+function start() {
+  cur.site = document.querySelector('input[name="site"]:checked').value; cur.diff = document.querySelector('input[name="diff"]:checked').value;
+  G = E.newGame(cur.site, cur.diff, (Math.random() * 1e9) | 0); tipSeen = false; flareDay = false; show('game'); sfx('click'); briefing();
+}
+function home() { phase = 'title'; show('title'); showBest(); }
+function showBest() {
+  var b = getBest(), ks = Object.keys(b); $('best').textContent = ks.length ? 'Best scores: ' + ks.map(function (k) { var p = k.split('-'); return (p[0] === 'moon' ? 'Moon' : 'Mars') + ' ' + (p[1] === 'cadet' ? 'Cadet' : 'Commander') + ' ' + b[k]; }).join(' · ') : '';
+}
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('[data-act]'); if (!t) return; var a = t.getAttribute('data-act');
+  if (a === 'choose') choose(+t.getAttribute('data-i'));
+  else if (a === 'quiz') answer(+t.getAttribute('data-i'), t);
+  else if (a === 'toPlan') toPlan();
+  else if (a === 'sys') { var k = t.getAttribute('data-k'); plan[k] = Math.max(0, Math.min(E.MAX_BLOCKS, plan[k] + +t.getAttribute('data-d'))); sfx('click'); renderPlan(); }
+  else if (a === 'task') { var kk = t.getAttribute('data-k'); plan.tasks[kk] = Math.max(0, plan.tasks[kk] + +t.getAttribute('data-d')); sfx('click'); renderPlan(); }
+  else if (a === 'hint') hint();
+  else if (a === 'end') endDay();
+  else if (a === 'next') { sfx('click'); briefing(); }
+  else if (a === 'again') { document.querySelector('input[name="site"][value="' + cur.site + '"]').checked = true; document.querySelector('input[name="diff"][value="' + cur.diff + '"]').checked = true; start(); }
+  else if (a === 'other') { var o = cur.site === 'moon' ? 'mars' : 'moon'; document.querySelector('input[name="site"][value="' + o + '"]').checked = true; start(); }
+  else if (a === 'home') home();
+});
+$('startBtn').addEventListener('click', start);
+$('homeBtn').addEventListener('click', home);
+$('aboutBtn').addEventListener('click', function () { prevScreen = ['title', 'game', 'end'].filter(function (s) { return !$(s).hidden; })[0] || 'title'; ['title', 'game', 'end'].forEach(function (s) { $(s).hidden = true; }); $('about').hidden = false; $('pips').hidden = true; window.scrollTo(0, 0); });
+$('aboutBack').addEventListener('click', function () { $('about').hidden = true; $(prevScreen).hidden = false; $('pips').hidden = prevScreen !== 'game'; });
+$('soundBtn').addEventListener('click', function () { soundOn = !soundOn; this.textContent = soundOn ? 'Sound on' : 'Sound off'; this.setAttribute('aria-pressed', String(soundOn)); sfx('click'); });
+buildScene(); buildMeters(); showBest();
+})();
+</script>
+
+</body></html>
